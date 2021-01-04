@@ -1,6 +1,6 @@
 // 转换css
 
-import { isSingleColor, stream2Base64 } from "../common/utils";
+import { getTransformRotate, isSingleColor, stream2Base64 } from "../common/utils";
 import { PNode } from "../PNode";
 
 /**
@@ -12,6 +12,7 @@ export async function transformCss(node: PNode, childStyles: string): Promise<st
   try {
     if (node.type === 'group') return childStyles
     const backgroundStyles = await getBackground(node)
+    const clippedBy = (node.realNode as any).clippedBy()
     // 拼接样式
     let styles = {
       ...getPosition(node),
@@ -20,7 +21,7 @@ export async function transformCss(node: PNode, childStyles: string): Promise<st
     if (node.type === 'text') {
       styles = {
         ...styles,
-        ...getTextStyles(node)
+        ...getTextStyles(node, styles)
       }
     } else {
       styles = {
@@ -37,7 +38,7 @@ export async function transformCss(node: PNode, childStyles: string): Promise<st
  * 获取文本样式
  * @param node 节点
  */
-function getTextStyles(node: PNode) {
+function getTextStyles(node: PNode, defaultStyles: any) {
   const position = node.position
   const textData = node.realNode.get('typeTool')
   // const text = node.textData
@@ -46,18 +47,20 @@ function getTextStyles(node: PNode) {
   const size = textData.sizes()[0]
   // const fonts = textData.fonts()
   // const skip = textData.skip()
-  const leading = textData.styles().Leading[0]
+  const stylesData = textData.styles()
+  const leading = stylesData.Leading[0]
   const alignment = textData.alignment()[0]
   const transform = textData.transform
+  const rotate = getTransformRotate(transform)
+  const diffYY = 1 - transform.yy
   const styles = {
     color: `rgba(${color.join(',')})`,
     'font-size': size,
     'line-height': leading,
     'text-align': alignment,
-    'transform-origin': `0 0`,
-    'transform': `scale(${transform.xx}, ${transform.yy})`,
+    'transform': [`rotate(${rotate}deg)`],
     'white-space': 'pre',
-    'top': position.top - (leading - size) / 2
+    'top': defaultStyles.top - (leading - size) / 2
   }
   return styles
 }
@@ -147,7 +150,8 @@ function obj2Css(obj: Record<string, any>): string {
     if (Array.isArray(value)) {
       let temp = []
       value.forEach(item => {
-        if (typeof value === 'number') temp.push(`${item}px`)
+        if (typeof value === 'number') item += 'px'
+        temp.push(item)
       })
       value = temp.join(' ')
       // 判断是否为number

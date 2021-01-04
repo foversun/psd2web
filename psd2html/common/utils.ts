@@ -34,3 +34,16 @@ export function isSingleColor(pixelData: number[]) {
   const data = new Set(pixelData)
   return data.size <= 4
 }
+/**
+ * 获取旋转角度
+ * @param transform 变换对象
+ */
+export function getTransformRotate(transform: any) {
+  let rotation = Math.round(Math.atan(transform.xy / transform.xx) * (180 / Math.PI))
+  if (transform.xx < 0) {
+    rotation += 180
+  } else if (rotation < 0) {
+    rotation += 360
+  }
+  return rotation
+}

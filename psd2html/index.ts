@@ -1,7 +1,7 @@
 /**
  * 主入口
  */
-import PSD from 'psd'
+import PSD from './psd.js'
 import { stream2Base64 } from './common/utils'
 import { PNode } from './PNode'
 
