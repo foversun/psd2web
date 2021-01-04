@@ -1,6 +1,6 @@
 // 转换css
 
-import { getTransformRotate, isSingleColor, stream2Base64 } from "../common/utils";
+import { getTransformRotate, isSingleColor, mergeChildsPixelData, pixedData2Base64, stream2Base64 } from "../common/utils";
 import { PNode } from "../PNode";
 
 /**
@@ -12,7 +12,6 @@ export async function transformCss(node: PNode, childStyles: string): Promise<st
   try {
     if (node.type === 'group') return childStyles
     const backgroundStyles = await getBackground(node)
-    const clippedBy = (node.realNode as any).clippedBy()
     // 拼接样式
     let styles = {
       ...getPosition(node),
@@ -109,8 +108,22 @@ async function getBackground(node: PNode) {
   // 判断是否是组或者根
   const isGroupOrRoot: boolean = !!node.type.match(/group|root/)
   // console.log(layerStyles, isGroupOrRoot)
+  // 判断是否存在剪切
+  if (node.clippedChilds.length) {
+    try {
+      // 获取合并后的像素点
+      const mergePixel = mergeChildsPixelData(node, node.clippedChilds)
+      // 获取大小
+      const size = node.size
+      // 转换
+      const base64 = await pixedData2Base64(mergePixel, size.width, size.height)
+      styles['background'] = `url(data:image/png;base64,${base64}) no-repeat top center / 100% 100%`
+    } catch (err) {
+      console.error('clipped background 处理失败', err)
+    }
+  }
   // 判断是否是单一颜色,并且不是根
-  if (isSingleColor(pixelData) && !isGroupOrRoot) {
+  else if (isSingleColor(pixelData) && !isGroupOrRoot) {
     const color = pixelData.slice(0, 4)
     styles['background-color'] = `rgba(${color.join(',')})`
   } else if (layerStyles && layerStyles.SoFi) {

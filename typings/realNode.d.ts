@@ -21,6 +21,10 @@ declare class RealNode {
   type: string
   /** 图层名称 */
   name: string
+  /** 剪切蒙版 */
+  clippedBy?: () => RealNode
+  /** 图层信息 */
+  layer: any
 }
 /**
  * 图层样式接口

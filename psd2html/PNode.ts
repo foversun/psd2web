@@ -1,6 +1,6 @@
 // PNode对象
 
-import { isTextLayer } from "./common/utils"
+import { clippedBy, isTextLayer } from "./common/utils"
 import { transformCss } from "./transform/css"
 import { transformHtml } from "./transform/html"
 /**
@@ -23,6 +23,8 @@ export class PNode {
   parent?: PNode
   /** 子节点数组 */
   children: PNode[] = []
+  /** 被当前节点裁剪的节点 */
+  clippedChilds: PNode[] = []
   /** json数据 */
   jsonData: NExport.IData
   /** 图层样式 */
@@ -62,8 +64,10 @@ export class PNode {
   constructor(node: RealNode, parent?: PNode) {
     nodeId ++
     this.uid = nodeId
-    // 保持真实node
+    // 设置真实node
     this.realNode = node
+    // 关联
+    ;(node as any).pNode = this
     // 初始化json数据
     this.jsonData = node.export()
     // 获取图层属性
@@ -125,7 +129,20 @@ function initChildren(parent: PNode) {
   // 遍历
   children.forEach((child: RealNode) => {
     // 创建pNode对象
-    new PNode(child, parent)
+    const pNode = new PNode(child)
+    // 判断是否为裁剪图层
+    if (child.layer.clipped) {
+      // 获取被谁裁剪
+      let _clippedBy = clippedBy(child)
+      // 找到对应PNode
+      const clippedByPNode: PNode = (_clippedBy as any).pNode
+      // 关联
+      clippedByPNode.clippedChilds.push(pNode)
+    } else {
+      // 添加父子关系
+      pNode.parent = parent
+      parent.children.push(pNode)
+    }
   })
 }
 /**
