@@ -1,6 +1,7 @@
 // 转换css
 
-import { getTransformRotate, isSingleColor, mergeChildsPixelData, pixedData2Base64, stream2Base64 } from "../common/utils";
+import { getTransformRotate, isSingleColor, stream2Base64 } from "../common/utils"
+import { mergeChildsPixelData, pixedData2Base64 } from '../common/pixel'
 import { PNode } from "../PNode";
 
 /**
@@ -126,13 +127,13 @@ async function getBackground(node: PNode) {
   else if (isSingleColor(pixelData) && !isGroupOrRoot) {
     const color = pixelData.slice(0, 4)
     styles['background-color'] = `rgba(${color.join(',')})`
-  } else if (layerStyles && layerStyles.SoFi) {
-    const SoFi = layerStyles.SoFi
-    const color = SoFi['Clr ']
-    // 判断是否开启
-    if (SoFi.enab) {
-      styles['background-color'] = `rgb(${color['Rd  ']}, ${color['Grn ']}, ${color['Bl  ']})`
-    }
+  // } else if (layerStyles && layerStyles.SoFi) {
+  //   const SoFi = layerStyles.SoFi
+  //   const color = SoFi['Clr ']
+  //   // 判断是否开启
+  //   if (SoFi.enab) {
+  //     styles['background-color'] = `rgb(${color['Rd  ']}, ${color['Grn ']}, ${color['Bl  ']})`
+  //   }
   } else if (!isGroupOrRoot && node.type !== 'text') {
     try {
       const base64 = await stream2Base64(png.pack())
