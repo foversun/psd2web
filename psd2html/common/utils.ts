@@ -31,7 +31,7 @@ export function stream2Base64(stream: any): Promise<string> {
  * 判断是否是单一颜色, 小于4为单色
  * @param pixelData 像素点数据
  */
-export function isSingleColor(pixelData: number[]) {
+export function isSingleColor(pixelData: number[] | Uint8Array) {
   const data = new Set(pixelData)
   return data.size <= 4
 }

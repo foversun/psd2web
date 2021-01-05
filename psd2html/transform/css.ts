@@ -1,7 +1,7 @@
 // 转换css
 
 import { getTransformRotate, isSingleColor, stream2Base64 } from "../common/utils"
-import { mergeChildsPixelData, pixedData2Base64 } from '../common/pixel'
+import { mergeChildsPixelData, mergeMaskPixelData, pixedData2Base64 } from '../common/pixel'
 import { PNode } from "../PNode";
 
 /**
@@ -92,57 +92,48 @@ function getSize(node: PNode) {
  * @param node 节点
  */
 async function getBackground(node: PNode) {
-  let png: Record<string, any> = {}
-  try {
-    // 流数据
-    png = node.realNode.toPng && node.realNode.toPng() || {}
-  } catch (error) {
-    // console.log('转换图片失败', error)
-    png = {}
-  }
-  // 层级样式
-  const layerStyles = node.layerStyles
-  // 像素数据
-  const pixelData: number[] = png.data
-  // 样式对象
-  const styles: Record<string, any> = {}
   // 判断是否是组或者根
   const isGroupOrRoot: boolean = !!node.type.match(/group|root/)
-  // console.log(layerStyles, isGroupOrRoot)
-  // 判断是否存在剪切
-  if (node.clippedChilds.length) {
-    try {
-      // 获取合并后的像素点
-      const mergePixel = mergeChildsPixelData(node, node.clippedChilds)
-      // 获取大小
-      const size = node.size
-      // 转换
-      const base64 = await pixedData2Base64(mergePixel, size.width, size.height)
-      styles['background'] = `url(data:image/png;base64,${base64}) no-repeat top center / 100% 100%`
-    } catch (err) {
-      console.error('clipped background 处理失败', err)
+  // 如果是组则直接返回
+  if (isGroupOrRoot) return {}
+  try {
+    // 层级样式
+    const layerStyles = node.layerStyles
+    const realNode = node.realNode
+    // 像素数据
+    let pixelData: Uint8Array = realNode.layer.image.pixelData
+    // 样式对象
+    const styles: Record<string, any> = {}
+    // 获取大小
+    const size = node.size
+    // 判断是否存在剪切
+    if (node.clippedChilds.length) {
+      try {
+        // 获取合并后的像素点
+        pixelData = mergeChildsPixelData(node, node.clippedChilds)
+      } catch (err) {
+        console.error('clipped background 处理失败', err)
+      }
+    } else if (node.type === 'text') { // 如果是文本标签
+      return styles
     }
-  }
-  // 判断是否是单一颜色,并且不是根
-  else if (isSingleColor(pixelData) && !isGroupOrRoot) {
-    const color = pixelData.slice(0, 4)
-    styles['background-color'] = `rgba(${color.join(',')})`
-  // } else if (layerStyles && layerStyles.SoFi) {
-  //   const SoFi = layerStyles.SoFi
-  //   const color = SoFi['Clr ']
-  //   // 判断是否开启
-  //   if (SoFi.enab) {
-  //     styles['background-color'] = `rgb(${color['Rd  ']}, ${color['Grn ']}, ${color['Bl  ']})`
-  //   }
-  } else if (!isGroupOrRoot && node.type !== 'text') {
-    try {
-      const base64 = await stream2Base64(png.pack())
-      styles['background'] = `url(data:image/png;base64,${base64}) no-repeat top center / 100% 100%`
-    } catch (error) {
-      console.error('background处理失败')
+    const mask = realNode.layer.mask
+    // 判断是否存在mask蒙层
+    if (mask.defaultColor) {
+      pixelData = mergeMaskPixelData(node, pixelData)
+      // const maskPixelData = realNode.layer.image.maskData
+      // pixelData = maskPixelData
+      // const base64 = await pixedData2Base64(pixelData, mask.width, mask.height)
+      // styles['background'] = `url(data:image/png;base64,${base64}) no-repeat top center / 100% 100%`
+      // return styles
     }
+    // 转换
+    const base64 = await pixedData2Base64(pixelData, size.width, size.height)
+    styles['background'] = `url(data:image/png;base64,${base64}) no-repeat top center / 100% 100%`
+    return styles
+  } catch (error) {
+    console.error('background 处理失败', node.className, error)
   }
-  return styles
 }
 /**
  * 获取文字样式

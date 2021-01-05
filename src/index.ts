@@ -5,7 +5,7 @@ import PSDRead from '../psd2html'
 http.createServer(async (req, res) => {
   console.log(req.url)
   if (req.url === '/home') {
-    const { html, css } = await PSDRead('./test.psd')
+    const { html, css } = await PSDRead('./test1.psd')
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     // res.setDefaultEncoding('utf-8')
     res.end(

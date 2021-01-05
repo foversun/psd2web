@@ -128,6 +128,7 @@ function initChildren(parent: PNode) {
   children.reverse()
   // 遍历
   children.forEach((child: RealNode) => {
+    if (!child.layer.visible) return
     // 创建pNode对象
     const pNode = new PNode(child)
     // 判断是否为裁剪图层
